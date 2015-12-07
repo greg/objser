@@ -111,7 +111,7 @@ Integer formats beginning with `int` are signed integers in 2's complement form.
 
 	       int8                 uint8
 	 -------- --------    -------- -------- 
-	|  0xc4  |xxxxxxxx|  |  0xc8  |xxxxxxxx|
+	|  0xc3  |xxxxxxxx|  |  0xc7  |xxxxxxxx|
 	 -------- --------    -------- -------- 
 
 	           int16                         uint16
