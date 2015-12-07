@@ -208,7 +208,7 @@ The 4-bit unsigned integer denoted `xxxxx` stores the length of the string, 1–
 	|0110xxxx|  bytes  |
 	 -------- ~~~~~~~~~
 
-The length of an `fdata` is given by the 5-bit unsigned integer in the first byte.
+The length of an `fdata` is given by the 4-bit unsigned integer in the first byte.
 
 	vdata8: data of 8-bit length       vdata16: data of 16-bit length
 	 -------- -------- ~~~~~~~~~    -------- -------- -------- ~~~~~~~~~
