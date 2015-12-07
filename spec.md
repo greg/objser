@@ -43,10 +43,10 @@ Objects of other types must be converted to one of the above listed types for ar
 
 ### File structure
 
-Objects are stored consecutively, indexed by unsigned integers ascending from 0, beginning from the first (root) object. The sequence of objects ends at the end of the file or stream.
+Objects are stored consecutively, indexed by unsigned integers ascending from 0, ending with the root object. The sequence of objects ends at the end of the file or stream.
 
 	 ======== ======== ======== ≈≈≈≈≈≈≈≈ ======== 
-	│  root  │  id 1  │  id 2  |        |  id N  │  EOF
+	│  id 0  │  id 1  │  id 2  |        |  root  │  EOF
 	 ======== ======== ======== ≈≈≈≈≈≈≈≈ ======== 
 
 ### Value format overview
