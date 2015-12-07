@@ -36,10 +36,10 @@ Objects of other types must be converted to one of the above listed types for ar
 
 ### Diagram notation key
 
-	  1 byte      bytes       object     objects
-	 --------    ~~~~~~~~    ========    ≈≈≈≈≈≈≈≈
-	|        |  |        |  │        │  |        |
-	 --------    ~~~~~~~~    ========    ≈≈≈≈≈≈≈≈
+	  1 byte      bytes       object      objects
+	 --------    ~~~~~~~~    ========    ≈≈≈≈≈≈≈≈≈
+	|        |  |        |  │        │  |         |
+	 --------    ~~~~~~~~    ========    ≈≈≈≈≈≈≈≈≈
 
 ### File structure
 
@@ -92,7 +92,7 @@ reserved | `11011xxx` | `0xd8` – `0xdf`
 
 A reference stores an integer reference to a top-level object. The smallest possible reference type should be used. As an optimisation, implementations may sort objects in descending order of use frequency, so frequently-used objects have small integer ids that fit in smaller reference types.
 
-	ref6 [0, 63]  ref8 [0, 255]
+	ref6 [0, 63]      ref8 [0, 255]
 	 ---------      -------- --------
 	|00xxxxxxx|    |01000000|xxxxxxxx|
 	 ---------      -------- --------
@@ -219,7 +219,7 @@ The length of an `fdata` is given by the 5-bit unsigned integer in the first byt
 	|  0xd2  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
 	 -------- -------- -------- -------- -------- ~~~~~~~~~
 
-	             vdata64: data of 64-bit length
+	                               vdata64: data of 64-bit length
 	 -------- --------- -------- -------- -------- ------- -------- -------- -------- ~~~~~~~~~
 	|  0xd3  |xxxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
 	 -------- --------- -------- -------- -------- ------- -------- -------- -------- ~~~~~~~~~
