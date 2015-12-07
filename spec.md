@@ -1,6 +1,6 @@
 # AOGF
 
-*This specification is currently in early stages of development and may contain errors or inconsistencies, and is not ready for implementation.*
+*This specification is currently in early stages of development and may contain errors or inconsistencies. Breaking changes may be made at any time.*
 
 ## Introduction
 
@@ -51,48 +51,60 @@ Objects are stored consecutively, indexed by unsigned integers ascending from 0,
 
 ### Value format overview
 
-format  | first byte | hex
-------  | ---------- | ---
-ref6    | `00xxxxxx` | `0x00` – `0x3f`
-ref16   | `01000000` | `0x40`
-ref32   | `01100000` | `0x60`
-+int6   | `10xxxxxx` | `0x80` – `0xbf`
--int5   | `111xxxxx` | `0xe0` – `0xff`
-false   | `11000000` | `0xc0`
-true    | `11000001` | `0xc1`
-nil     | `11000010` | `0xc2`
-int8    | `11000011` | `0xc3`
-int16   | `11000100` | `0xc4`
-int32   | `11000101` | `0xc5`
-int64   | `11000110` | `0xc6`
-uint8   | `11000111` | `0xc7`
-uint16  | `11001000` | `0xc8`
-uint32  | `11001001` | `0xc9`
-uint64  | `11001010` | `0xca`
-float32 | `11001011` | `0xcb`
-float64 | `11001101` | `0xcd`
-pair    | `11001100` | `0xcc`
-fstring | `010xxxxx` | `0x41` – `0x5f`
-vstring | `11001110` | `0xce`
-fdata   | `011xxxxx` | `0x61` – `0x7f`
-vdata   | `11001111` | `0xcf`
-farray  | `11010xxx` | `0xd1` – `0xd7`
-varray  | `11010000` | `0xd0`
-fmap    | `11011xxx` | `0xd9` – `0xdf`
-vmap    | `11011000` | `0xd8`
+format   | first byte | hex
+------   | ---------- | ---
+ref6     | `00xxxxxx` | `0x00` – `0x3f`
+ref8     | `01000000` | `0x40`
+ref16    | `01100000` | `0x60`
+ref32    | `11001111` | `0xcf`
++int6    | `10xxxxxx` | `0x80` – `0xbf`
+-int5    | `111xxxxx` | `0xe0` – `0xff`
+false    | `11000000` | `0xc0`
+true     | `11000001` | `0xc1`
+nil      | `11000010` | `0xc2`
+int8     | `11000011` | `0xc3`
+int16    | `11000100` | `0xc4`
+int32    | `11000101` | `0xc5`
+int64    | `11000110` | `0xc6`
+uint8    | `11000111` | `0xc7`
+uint16   | `11001000` | `0xc8`
+uint32   | `11001001` | `0xc9`
+uint64   | `11001010` | `0xca`
+float32  | `11001011` | `0xcb`
+float64  | `11001101` | `0xcd`
+pair     | `11001100` | `0xcc`
+fstring  | `0100xxxx` | `0x41` – `0x4f`
+vstring  | `11001110` | `0xce`
+estring  | `11010110` | `0xd6`
+fdata    | `0110xxxx` | `0x61` – `0x6f`
+vdata8   | `11010000` | `0xd0`
+vdata16  | `11010001` | `0xd1`
+vdata32  | `11010010` | `0xd2`
+vdata64  | `11010011` | `0xd3`
+edata    | `11010111` | `0xd7`
+farray   | `0101xxxx` | `0x50` – `0x5f`
+varray   | `11010100` | `0xd4`
+fmap     | `0111xxxx` | `0x70` – `0x7f`
+vmap     | `11010101` | `0xd5`
+reserved | `11011xxx` | `0xd8` – `0xdf`
 
 ### References
 
 A reference stores an integer reference to a top-level object. The smallest possible reference type should be used. As an optimisation, implementations may sort objects in descending order of use frequency, so frequently-used objects have small integer ids that fit in smaller reference types.
 
-	ref6 [0, 63]      ref16 [0, 65 535]
-	 ---------    -------- -------- --------
-	|00xxxxxxx|  |01000000|xxxxxxxx|xxxxxxxx|
-	 ---------    -------- -------- --------
-	
+	ref6 [0, 63]  ref8 [0, 255]
+	 ---------      -------- --------
+	|00xxxxxxx|    |01000000|xxxxxxxx|
+	 ---------      -------- --------
+
+	     ref16 [0, 65 535]
+     -------- -------- --------
+    |01100000|xxxxxxxx|xxxxxxxx|
+	 -------- -------- --------
+
 	           ref32 [0, 4 294 967 295]
 	 -------- -------- -------- -------- --------
-    |01100000|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+    |11001111|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
      -------- -------- -------- -------- --------
 
 ### Integers
@@ -171,35 +183,55 @@ Floating-point numbers are stored in the corresponding IEEE 754 format.
 
 	fstring: fixed-length string (no null terminator)
 	 --------
-	|010xxxxx|
+	|0100xxxx|
 	 --------
 
-The 5-bit unsigned integer denoted `xxxxx` stores the length of the string, 1–31.
+The 4-bit unsigned integer denoted `xxxxx` stores the length of the string, 1–15.
 
 	vstring: null-terminated string
 	 -------- ~~~~~~~~ --------
 	|  0xce  |  text  |  0x00  |
 	 -------- ~~~~~~~~ --------
 
-**Note**: zero-length strings *cannot* be stored in the `fstring` format, as this would conflict with the `ref16` format. Instead, store a `vstring` that contains only a null-terminator.
+**Note**: zero-length strings *cannot* be stored in the `fstring` format, as this would conflict with the `ref8` format. Instead, store an `estring`:
+
+	estring: empty string
+	 --------
+	|  0xd6  |
+	 --------
 
 ### Data
 
 	fdata: fixed-length data
-	 -------- ~~~~~~~~
-	|011xxxxx|  data  |
-	 -------- ~~~~~~~~
+	 -------- ~~~~~~~~~
+	|0110xxxx|  bytes  |
+	 -------- ~~~~~~~~~
 
 The length of an `fdata` is given by the 5-bit unsigned integer in the first byte.
 
-	  vdata: data longer than 31 bytes
-	 -------- ================= ~~~~~~~~
-	|  0xcf  |  uint or +int6  |  data  |
-	 -------- ================= ~~~~~~~~
+	vdata8: data of 8-bit length       vdata16: data of 16-bit length
+	 -------- -------- ~~~~~~~~~    -------- -------- -------- ~~~~~~~~~
+	|  0xd0  |xxxxxxxx|  bytes  |  |  0xd1  |xxxxxxxx|xxxxxxxx|  bytes  |
+	 -------- -------- ~~~~~~~~~    -------- -------- -------- ~~~~~~~~~
 
-The length of a `vdata` is given by a *complete* positive integer object that follows the `vdata` signature byte.
+	             vdata32: data of 32-bit length
+	 -------- -------- -------- -------- -------- ~~~~~~~~~
+	|  0xd2  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
+	 -------- -------- -------- -------- -------- ~~~~~~~~~
 
-**Note**: zero-length data *cannot* be stored in the `fdata` format, as this would conflict with the `ref32` format. Instead, store a `vdata` with length 0.
+	             vdata64: data of 64-bit length
+	 -------- --------- -------- -------- -------- ------- -------- -------- -------- ~~~~~~~~~
+	|  0xd3  |xxxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
+	 -------- --------- -------- -------- -------- ------- -------- -------- -------- ~~~~~~~~~
+
+The length of a `vdata` is given by the unsigned integer that follows the `vdata` signature byte.
+
+**Note**: zero-length data *cannot* be stored in the `fdata` format, as this would conflict with the `ref16` format. Instead, store an `edata`:
+
+	edata: empty data
+	 --------
+	|  0xd7  |
+	 --------
 
 ### Pair
 
@@ -211,28 +243,24 @@ The length of a `vdata` is given by a *complete* positive integer object that fo
 ### Array
 
 	farray: fixed-length array
-	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈≈
-	|11010xxx| xxx objects |
-	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈≈
+	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈≈≈
+	|0101xxxx| xxxx objects |
+	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈≈≈
 
 	varray: nil-terminated array
 	 -------- ≈≈≈≈≈≈≈≈≈ =======
-	|  0xd0  | objects |  nil  |
+	|  0xd4  | objects |  nil  |
 	 -------- ≈≈≈≈≈≈≈≈≈ =======
-
-**Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `varray` signature. Instead, store a `varray` that is immediately nil-terminated.
 
 ### Map
 
 	fmap: fixed-length map
 	 -------- ======= ========= ≈≈≈≈≈≈≈
-	|11011xxx|  key  |  value  |  etc  |
+	|0111xxxx|  key  |  value  |  etc  |
 	 -------- ======= ========= ≈≈≈≈≈≈≈
 
 	vmap: nil-terminated map
 	 -------- ======= ========= ≈≈≈≈≈≈≈ =======
-	|  0xd8  |  key  |  value  |  etc  |  nil  |
+	|  0xd5  |  key  |  value  |  etc  |  nil  |
 	 -------- ======= ========= ≈≈≈≈≈≈≈ =======
-
-**Note**: zero-length maps *cannot* be stored in the `fmap` format, as this would conflict with the `vmap` signature. Instead, store a `vmap` that is immediately nil-terminated.
 
