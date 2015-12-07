@@ -56,7 +56,7 @@ format   | first byte | hex
 ref6     | `00xxxxxx` | `0x00` – `0x3f`
 ref8     | `01000000` | `0x40`
 ref16    | `01100000` | `0x60`
-ref32    | `11001111` | `0xcf`
+ref32    | `01110000` | `0x70`
 +int6    | `10xxxxxx` | `0x80` – `0xbf`
 -int5    | `111xxxxx` | `0xe0` – `0xff`
 false    | `11000000` | `0xc0`
@@ -73,20 +73,21 @@ uint64   | `11001010` | `0xca`
 float32  | `11001011` | `0xcb`
 float64  | `11001101` | `0xcd`
 pair     | `11001100` | `0xcc`
-fstring  | `0100xxxx` | `0x41` – `0x4f`
+fstring  | `0111xxxx` | `0x71` – `0x7f`
 vstring  | `11001110` | `0xce`
-estring  | `11010110` | `0xd6`
+estring  | `11001111` | `0xcf`
 fdata    | `0110xxxx` | `0x61` – `0x6f`
 vdata8   | `11010000` | `0xd0`
 vdata16  | `11010001` | `0xd1`
 vdata32  | `11010010` | `0xd2`
 vdata64  | `11010011` | `0xd3`
-edata    | `11010111` | `0xd7`
-farray   | `0101xxxx` | `0x50` – `0x5f`
-varray   | `11010100` | `0xd4`
-fmap     | `0111xxxx` | `0x70` – `0x7f`
-vmap     | `11010101` | `0xd5`
-reserved | `11011xxx` | `0xd8` – `0xdf`
+edata    | `11010100` | `0xd4`
+farray   | `010xxxxx` | `0x41` – `0x5f`
+varray   | `11010101` | `0xd5`
+earray   | `11010110` | `0xd6`
+map      | `11010111` | `0xd7`
+emap     | `11011000` | `0xd8`
+reserved | `11011xxx` | `0xd9` – `0xdf`
 
 ### References
 
@@ -104,7 +105,7 @@ A reference stores an integer reference to a top-level object. The smallest poss
 
 	           ref32 [0, 4 294 967 295]
 	 -------- -------- -------- -------- --------
-    |11001111|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+    |01110000|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
      -------- -------- -------- -------- --------
 
 ### Integers
@@ -183,7 +184,7 @@ Floating-point numbers are stored in the corresponding IEEE 754 format.
 
 	fstring: fixed-length string (no null terminator)
 	 --------
-	|0100xxxx|
+	|0111xxxx|
 	 --------
 
 The 4-bit unsigned integer denoted `xxxxx` stores the length of the string, 1–15.
@@ -193,11 +194,11 @@ The 4-bit unsigned integer denoted `xxxxx` stores the length of the string, 1–
 	|  0xce  |  text  |  0x00  |
 	 -------- ~~~~~~~~ --------
 
-**Note**: zero-length strings *cannot* be stored in the `fstring` format, as this would conflict with the `ref8` format. Instead, store an `estring`:
+**Note**: zero-length strings *cannot* be stored in the `fstring` format, as this would conflict with the `ref32` format. Instead, store an `estring`:
 
 	estring: empty string
 	 --------
-	|  0xd6  |
+	|  0xcf  |
 	 --------
 
 ### Data
@@ -230,7 +231,7 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 
 	edata: empty data
 	 --------
-	|  0xd7  |
+	|  0xd4  |
 	 --------
 
 ### Pair
@@ -243,24 +244,35 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 ### Array
 
 	farray: fixed-length array
-	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈≈≈
-	|0101xxxx| xxxx objects |
-	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈≈≈
+	 -------- ≈≈≈≈≈≈≈≈≈
+	|010xxxxx| objects |
+	 -------- ≈≈≈≈≈≈≈≈≈
 
 	varray: nil-terminated array
 	 -------- ≈≈≈≈≈≈≈≈≈ =======
-	|  0xd4  | objects |  nil  |
+	|  0xd5  | objects |  nil  |
 	 -------- ≈≈≈≈≈≈≈≈≈ =======
+
+**Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `edata`:
+
+	earray: empty array
+	 --------
+	|  0xd6  |
+	 --------
 
 ### Map
 
-	fmap: fixed-length map
-	 -------- ======= ========= ≈≈≈≈≈≈≈
-	|0111xxxx|  key  |  value  |  etc  |
-	 -------- ======= ========= ≈≈≈≈≈≈≈
+	     map: array-backed map
+	 -------- ====================
+	|  0xd7  |  farray or varray  |
+	 -------- ====================
 
-	vmap: nil-terminated map
-	 -------- ======= ========= ≈≈≈≈≈≈≈ =======
-	|  0xd5  |  key  |  value  |  etc  |  nil  |
-	 -------- ======= ========= ≈≈≈≈≈≈≈ =======
+The array that follows the map designator contains alternating keys and values, in the form (key0, val0, key1, val1, ...).
+	
+To conserve space, use `emap` to store an empty map in one byte:
+
+	emap: empty map
+	 --------
+	|  0xd8  |
+	 --------
 

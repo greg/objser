@@ -1,0 +1,3 @@
+[submodule "AOGF-swift"]
+	path = impl-swift
+	url = git@github.com:PartiallyFinite/AOGF-swift.git
