@@ -87,7 +87,8 @@ varray   | `11010101` | `0xd5`
 earray   | `11010110` | `0xd6`
 map      | `11010111` | `0xd7`
 emap     | `11011000` | `0xd8`
-reserved | `11011xxx` | `0xd9` – `0xdf`
+sentinel | `11011001` | `0xd9`
+reserved | `11011xxx` | `0xda` – `0xdf`
 
 ### References
 
@@ -248,10 +249,10 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 	|010xxxxx| objects |
 	 -------- ≈≈≈≈≈≈≈≈≈
 
-	varray: nil-terminated array
-	 -------- ≈≈≈≈≈≈≈≈≈ =======
-	|  0xd5  | objects |  nil  |
-	 -------- ≈≈≈≈≈≈≈≈≈ =======
+	varray: sentinel-terminated array
+	 -------- ≈≈≈≈≈≈≈≈≈ --------
+	|  0xd5  | objects |  0xd9  |
+	 -------- ≈≈≈≈≈≈≈≈≈ --------
 
 **Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `edata`:
 
