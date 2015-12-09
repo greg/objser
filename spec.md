@@ -111,7 +111,7 @@ A reference stores an integer reference to a top-level object. The smallest poss
 
 ### Integers
 
-Integer formats beginning with `int` are signed integers in 2's complement form. Formats beginning with `uint` are unsigned integers starting at 0.
+Integer formats beginning with `int` are signed integers in 2's complement form, stored with **little-endian** byte ordering. Formats beginning with `uint` are unsigned integers starting at 0.
 
 	+int6: unsigned, clear the first bit to obtain the value
 	 --------
@@ -169,7 +169,7 @@ Integer formats beginning with `int` are signed integers in 2's complement form.
 
 ### Float
 
-Floating-point numbers are stored in the corresponding IEEE 754 format.
+Floating-point numbers are stored in the corresponding IEEE 754 format, with **little-endian** byte ordering.
 
 	                   float32
 	 -------- -------- -------- -------- -------- 
