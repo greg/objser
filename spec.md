@@ -22,9 +22,8 @@ The following types are supported by AOGF:
 - **Float**: IEEE 754 single (32-bit) or double (64-bit) precision floating-point number
 - **String**: null-terminated UTF-8 string
 - **Data**: an opaque sequence of bytes
-- **Pair**: stores two values, each of any AOGF type; useful for tagging custom application data types, or creating a map using an array of tuples
 - **Array**: an ordered collection of objects
-- **Map**: a key-value collection of objects (essentially an array of pairs, but handled by implementations to store and create native map/dictionary objects)
+- **Map**: a key-value collection of objects
 
 Objects of other types must be converted to one of the above listed types for archiving.
 
@@ -71,11 +70,10 @@ uint16   | `11001000` | `0xc8`
 uint32   | `11001001` | `0xc9`
 uint64   | `11001010` | `0xca`
 float32  | `11001011` | `0xcb`
-float64  | `11001101` | `0xcd`
-pair     | `11001100` | `0xcc`
+float64  | `11001100` | `0xcc`
 fstring  | `0111xxxx` | `0x71` – `0x7f`
-vstring  | `11001110` | `0xce`
-estring  | `11001111` | `0xcf`
+vstring  | `11001101` | `0xcd`
+estring  | `11001110` | `0xce`
 fdata    | `0110xxxx` | `0x61` – `0x6f`
 vdata8   | `11010000` | `0xd0`
 vdata16  | `11010001` | `0xd1`
@@ -87,8 +85,8 @@ varray   | `11010101` | `0xd5`
 earray   | `11010110` | `0xd6`
 map      | `11010111` | `0xd7`
 emap     | `11011000` | `0xd8`
-sentinel | `11011001` | `0xd9`
-reserved | `11011xxx` | `0xda` – `0xdf`
+sentinel | `11001111` | `0xcf`
+reserved | `11011xxx` | `0xd9` – `0xdf`
 
 ### References
 
@@ -178,7 +176,7 @@ Floating-point numbers are stored in the corresponding IEEE 754 format, with **l
 
 	                                     float64
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
-	|  0xcd  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xcc  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
 
 ### String
@@ -192,14 +190,14 @@ The 4-bit unsigned integer denoted `xxxx` stores the length of the string, 1–1
 
 	vstring: null-terminated string
 	 -------- ~~~~~~~~ --------
-	|  0xce  |  text  |  0x00  |
+	|  0xcd  |  text  |  0x00  |
 	 -------- ~~~~~~~~ --------
 
 **Note**: zero-length strings *cannot* be stored in the `fstring` format, as this would conflict with the `ref32` format. Instead, store an `estring`:
 
 	estring: empty string
 	 --------
-	|  0xcf  |
+	|  0xce  |
 	 --------
 
 ### Data
@@ -235,13 +233,6 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 	|  0xd4  |
 	 --------
 
-### Pair
-
-	             pair
-	 -------- ========= ==========
-	|  0xcc  |  first  |  second  |
-	 -------- ========= ==========
-
 ### Array
 
 	farray: fixed-length array
@@ -251,7 +242,7 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 
 	varray: sentinel-terminated array
 	 -------- ≈≈≈≈≈≈≈≈≈ --------
-	|  0xd5  | objects |  0xd9  |
+	|  0xd5  | objects |  0xcf  |
 	 -------- ≈≈≈≈≈≈≈≈≈ --------
 
 **Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `edata`:
