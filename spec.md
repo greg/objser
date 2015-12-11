@@ -30,7 +30,7 @@ Objects of other types must be converted to one of the above listed types for ar
 
 ## Limitations
 
-- An object graph must contain at most 2<sup>32</sup> - 1 (see references format section for details) objects to be archived. The **String**, **Data**, **Array**, and **Map** types are considered objects.
+- An object graph must contain at most 2<sup>32</sup> - 1 (see references format section for details) objects to be archived. Which values are considered objects is implementation-dependent.
 
 ## Format
 
@@ -188,7 +188,7 @@ Floating-point numbers are stored in the corresponding IEEE 754 format, with **l
 	|0111xxxx|
 	 --------
 
-The 4-bit unsigned integer denoted `xxxxx` stores the length of the string, 1–15.
+The 4-bit unsigned integer denoted `xxxx` stores the length of the string, 1–15.
 
 	vstring: null-terminated string
 	 -------- ~~~~~~~~ --------
