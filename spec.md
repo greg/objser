@@ -12,9 +12,9 @@ ObjSer is a binary data-interchange format. It differs from formats such as [JSO
 - **Portable**: easy to implement and platform-independent
 - **Fast**: performant (de)serialisation
 
-## Serialisable types
+## Encodable types
 
-The following object types are serialisable by ObjSer:
+The following primitive types are encodable by ObjSer:
 
 - **Integer**: unsigned [0, 2<sup>64</sup> - 1], signed [-2<sup>63</sup>, 2<sup>63</sup> - 1]
 - **Nil**
