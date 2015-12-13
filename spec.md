@@ -1,20 +1,20 @@
-# AOGF
+# Object Graph Serialisation (ObjSer)
 
 *This specification is currently in early stages of development and may contain errors or inconsistencies. Breaking changes may be made at any time.*
 
 ## Introduction
 
-AOGF (Archived Object Graph Format) is a binary data-interchange format. It differs from formats such as JSON and MessagePack in that it is able to represent *arbitrary* object graphs, including those containing cycles or multiple instances of the same object, without duplication.
+ObjSer is a binary data-interchange format. It differs from formats such as [JSON](http://json.org) and [MessagePack](http://msgpack.org) in that it is able to represent *arbitrary* object graphs, including those containing cycles or multiple instances of the same object, without duplication.
 
 ## Design goals
 
 - **Small**: a maximally compact binary storage format
 - **Portable**: easy to implement and platform-independent
-- **Fast**: performant archiving and unarchiving operations
+- **Fast**: performant (de)serialisation
 
-## Types
+## Serialisable types
 
-The following types are supported by AOGF:
+The following object types are serialisable by ObjSer:
 
 - **Integer**: unsigned [0, 2<sup>64</sup> - 1], signed [-2<sup>63</sup>, 2<sup>63</sup> - 1]
 - **Nil**
@@ -25,13 +25,19 @@ The following types are supported by AOGF:
 - **Array**: an ordered collection of objects
 - **Map**: a key-value collection of objects
 
-Objects of other types must be converted to one of the above listed types for archiving.
+Objects of other types must be converted to one of the above listed types for serialisation.
+
+Throughout this specification, the term 'object' refers to any of the above.
 
 ## Limitations
 
 - An object graph must contain at most 2<sup>32</sup> - 1 (see references format section for details) objects to be archived. Which values are considered objects is implementation-dependent.
 
+- Implementations may impose further limitations on acceptable integer values and sequence lengths, as required by the limitations of the implementation language or platform.
+
 ## Format
+
+In this section, 'object' refers to a serialised object.
 
 ### Diagram notation key
 
@@ -48,10 +54,10 @@ Objects are stored consecutively, indexed by unsigned integers ascending from 0,
 	│  id 0  │  id 1  │  id 2  |        |  root  │  EOF
 	 ======== ======== ======== ≈≈≈≈≈≈≈≈ ======== 
 
-### Value format overview
+### Formats overview
 
 format   | first byte | hex
-------   | ---------- | ---
+-------- | ---------- | ---
 ref6     | `00xxxxxx` | `0x00` – `0x3f`
 ref8     | `01000000` | `0x40`
 ref16    | `01100000` | `0x60`
