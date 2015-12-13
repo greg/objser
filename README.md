@@ -4,3 +4,7 @@ ObjSer is a binary data-interchange format. It differs from formats such as [JSO
 
 Read the [specification](spec.md).
 
+## Implementations
+
+- [**Swift**](https://github.com/PartiallyFinite/objser-swift) (in progress, see [develop branch](https://github.com/PartiallyFinite/objser-swift/tree/develop) for latest changes)
+
