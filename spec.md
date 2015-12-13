@@ -1,6 +1,6 @@
 # Object Graph Serialisation (ObjSer)
 
-*This specification is currently in early stages of development and may contain errors or inconsistencies. Breaking changes may be made at any time.*
+*This specification is mostly stable, and can be considered ready for implementation. However, minor breaking changes may be introduced at any time.*
 
 ## Introduction
 

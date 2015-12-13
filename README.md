@@ -4,5 +4,3 @@ ObjSer is a binary data-interchange format. It differs from formats such as [JSO
 
 Read the [specification](spec.md).
 
-This project is currently in early stages and the specification may contain errors or inconsistencies, and is not ready for implementation.
-
