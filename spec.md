@@ -84,15 +84,14 @@ fdata    | `0110xxxx` | `0x61` – `0x6f`
 vdata8   | `11010000` | `0xd0`
 vdata16  | `11010001` | `0xd1`
 vdata32  | `11010010` | `0xd2`
-vdata64  | `11010011` | `0xd3`
-edata    | `11010100` | `0xd4`
+edata    | `11010011` | `0xd3`
 farray   | `010xxxxx` | `0x41` – `0x5f`
-varray   | `11010101` | `0xd5`
-earray   | `11010110` | `0xd6`
-map      | `11010111` | `0xd7`
-emap     | `11011000` | `0xd8`
+varray   | `11010100` | `0xd4`
+earray   | `11010101` | `0xd5`
+map      | `11010110` | `0xd6`
+emap     | `11010111` | `0xd7`
 sentinel | `11001111` | `0xcf`
-reserved | `11011xxx` | `0xd9` – `0xdf`
+reserved | `11011xxx` | `0xd8` – `0xdf`
 
 ### References
 
@@ -225,18 +224,13 @@ The length of an `fdata` is given by the 4-bit unsigned integer in the first byt
 	|  0xd2  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
 	 -------- -------- -------- -------- -------- ~~~~~~~~~
 
-	                               vdata64: data of 64-bit length
-	 -------- --------- -------- -------- -------- ------- -------- -------- -------- ~~~~~~~~~
-	|  0xd3  |xxxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
-	 -------- --------- -------- -------- -------- ------- -------- -------- -------- ~~~~~~~~~
-
 The length of a `vdata` is given by the unsigned integer that follows the `vdata` signature byte.
 
 **Note**: zero-length data *cannot* be stored in the `fdata` format, as this would conflict with the `ref16` format. Instead, store an `edata`:
 
 	edata: empty data
 	 --------
-	|  0xd4  |
+	|  0xd3  |
 	 --------
 
 ### Array
@@ -248,21 +242,21 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 
 	varray: sentinel-terminated array
 	 -------- ≈≈≈≈≈≈≈≈≈ --------
-	|  0xd5  | objects |  0xcf  |
+	|  0xd4  | objects |  0xcf  |
 	 -------- ≈≈≈≈≈≈≈≈≈ --------
 
 **Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `edata`:
 
 	earray: empty array
 	 --------
-	|  0xd6  |
+	|  0xd5  |
 	 --------
 
 ### Map
 
 	     map: array-backed map
 	 -------- ====================
-	|  0xd7  |  farray or varray  |
+	|  0xd6  |  farray or varray  |
 	 -------- ====================
 
 The array that follows the map designator contains alternating keys and values, in the form (key0, val0, key1, val1, ...).
@@ -271,6 +265,6 @@ To conserve space, use `emap` to store an empty map in one byte:
 
 	emap: empty map
 	 --------
-	|  0xd8  |
+	|  0xd7  |
 	 --------
 
