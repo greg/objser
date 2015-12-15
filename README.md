@@ -6,5 +6,5 @@ Read the [specification](spec.md).
 
 ## Implementations
 
-- [**Swift**](https://github.com/PartiallyFinite/objser-swift) (in progress, see [develop branch](https://github.com/PartiallyFinite/objser-swift/tree/develop) for latest changes)
+- [**Swift**](https://github.com/PartiallyFinite/objser-swift) (reference implementation, compliant but feature-incomplete)
 
