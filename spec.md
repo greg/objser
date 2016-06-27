@@ -1,6 +1,6 @@
 # Object Graph Serialisation (ObjSer)
 
-*This specification is mostly stable, and can be considered ready for implementation. However, minor breaking changes may be introduced at any time. Terminology is still being actively adjusted, an implementations may need to be modified to remain consistent.*
+*This specification is mostly stable, and can be considered ready for implementation. However, minor breaking changes may be introduced at any time. Terminology is still being actively adjusted, and implementations may need to be modified to remain consistent.*
 
 ## Introduction
 
@@ -245,7 +245,7 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 	|  0xd4  | objects |  0xcf  |
 	 -------- ≈≈≈≈≈≈≈≈≈ --------
 
-**Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `edata`:
+**Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `earray`:
 
 	earray: empty array
 	 --------
@@ -261,7 +261,7 @@ The length of a `vdata` is given by the unsigned integer that follows the `vdata
 
 The array that follows the map designator contains alternating keys and values, in the form (key0, val0, key1, val1, ...).
 	
-To conserve space, use `emap` to store an empty map in one byte:
+To conserve space and for consistency with other formats, an `emap` should be used to store an empty map:
 
 	emap: empty map
 	 --------
