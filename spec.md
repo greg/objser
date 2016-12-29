@@ -196,8 +196,6 @@ Single-precision floating-point numbers are encoded in the IEEE 754 binary32 for
 	|0110xxxx|  characters  |
 	 -------- ~~~~~~~~~~~~~~
 
-TODO: Unicode? bytes or characters? it should be easy to count characters even if they're variable-width
-
 The 4-bit unsigned integer denoted `xxxx` gives the length of the string in bytes, 1–15. The first byte must be followed by exactly this many bytes of the string.
 
 	 vstring: null-terminated string
