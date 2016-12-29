@@ -1,6 +1,6 @@
 # Object Graph Serialisation (ObjSer)
 
-*This specification is mostly stable, and can be considered ready for implementation. However, minor breaking changes may be introduced at any time. Terminology is still being actively adjusted, an implementations may need to be modified to remain consistent.*
+*This specification is incomplete.*
 
 ## Introduction
 
@@ -9,114 +9,138 @@ ObjSer is a binary data-interchange format. It differs from formats such as [JSO
 ## Design goals
 
 - **Small**: a maximally compact binary storage format
-- **Portable**: easy to implement and platform-independent
+- **Portable**: platform and language-independent
 - **Fast**: performant (de)serialisation
 
 ## Encodable types
 
 The following primitive types are encodable by ObjSer:
 
-- **Integer**: unsigned [0, 2<sup>64</sup> - 1], signed [-2<sup>63</sup>, 2<sup>63</sup> - 1]
+- **Reference**: reference to another primitive, to avoid encoding the same object twice
+- **Integer**: [-2<sup>63</sup>, 2<sup>64</sup> - 1]
 - **Nil**
 - **Boolean**: true or false
 - **Float**: IEEE 754 single (32-bit) or double (64-bit) precision floating-point number
 - **String**: null-terminated UTF-8 string
-- **Data**: an opaque sequence of bytes
-- **Array**: an ordered collection of objects
-- **Map**: a key-value collection of objects
+- **Data**: an opaque sequence of bytes of maximum length 2<sup>32</sup> - 1
+- **Array**: an ordered collection of primitives
+- **Map**: a key-value (ordered) collection of primitives
+- **Typed Primitives**: type information (integer in [0, 2<sup>32</sup> - 1]) can be encoded for any primitive, with space optimisations for typed arrays and maps
 
-Objects of other types must be converted to one of the above listed types for serialisation.
+Objects must be represented as one of these primitives for encoding.
 
-Throughout this specification, the term 'object' refers to any of the above.
+Throughout this specification, the term *primitive* refers to any of the above.
 
-## Limitations
+## Diagram notation key
 
-- An object graph must contain at most 2<sup>32</sup> - 1 (see references format section for details) objects to be archived. Which values are considered objects is implementation-dependent.
+	  1 byte      bytes     primitive  primitives
+	 --------    ~~~~~~~~    =======    ≈≈≈≈≈≈≈≈
+	|        |  |        |  │       │  |        |
+	 --------    ~~~~~~~~    =======    ≈≈≈≈≈≈≈≈
 
-- Implementations may impose further limitations on acceptable integer values and sequence lengths, as required by the limitations of the implementation language or platform.
+## File structure
 
-## Format
-
-In this section, 'object' refers to a serialised object.
-
-### Diagram notation key
-
-	  1 byte      bytes       object      objects
-	 --------    ~~~~~~~~    ========    ≈≈≈≈≈≈≈≈≈
-	|        |  |        |  │        │  |         |
-	 --------    ~~~~~~~~    ========    ≈≈≈≈≈≈≈≈≈
-
-### File structure
-
-Objects are stored consecutively, indexed by unsigned integers ascending from 0, ending with the root object. The sequence of objects ends at the end of the file or stream.
+A file consists of a consecutive sequence of primitives, which are *indexed* by unsigned integers ascending consecutively from 0, ending with the root primitive. The sequence of primitives ends at the end of the file or stream. Array, map, and typed primitives may contain other primitives; these are not indexed.
 
 	 ======== ======== ======== ≈≈≈≈≈≈≈≈ ======== 
 	│  id 0  │  id 1  │  id 2  |        |  root  │  EOF
 	 ======== ======== ======== ≈≈≈≈≈≈≈≈ ======== 
 
-### Formats overview
+## Limitations
+
+- A single output file contains at most 2<sup>32</sup> indexed primitives. Hence, a serialisable object graph contains at most that many objects that are referenced by more than one object.
+
+- If required by language or platform limitations, implementations may impose the following limitations:
+    - Integer bounds may be restricted up to [0, 2<sup>32</sup> - 1] for unsigned integers and [-2<sup>32</sup>, 2<sup>32</sup> - 1] for signed integers; integers outside of decodable bounds must be decoded as a double-precision floating-point number, or single-precision if it provides the exact value or double-precision floating-point numbers are not supported
+    - If double-precision floating-point numbers are not supported, they must be truncated to single-precision on decoding
+    - String and array primitives may be restricted to a maximum length of at least 2<sup>32</sup> - 1 characters or constrained primitives, respectively
+    - Map primitives may be restricted to a maximum length of at least 2<sup>31</sup> - 1 key-value pairs
+
+    If implementation-imposed limitations cause a loss of precision, the implementation must notify the user of the decoder. If implementation-imposed limitations cause a failure to completely decode a string, array, or map, the entire decoding process must fail with a descriptive error.
+
+
+## Formats
+
+Each primitive is encoded in one of the supported *formats*.
+
+Characters `x` appearing in binary numbers represent a single variable bit.
+
+### Overview
 
 format   | first byte | hex
 -------- | ---------- | ---
 ref6     | `00xxxxxx` | `0x00` – `0x3f`
 ref8     | `01000000` | `0x40`
+farray   | `010xxxxx` | `0x41` – `0x5f`
 ref16    | `01100000` | `0x60`
+fstring  | `0110xxxx` | `0x61` – `0x6f`
 ref32    | `01110000` | `0x70`
+fdata    | `0111xxxx` | `0x71` – `0x7f`
 +int6    | `10xxxxxx` | `0x80` – `0xbf`
--int5    | `111xxxxx` | `0xe0` – `0xff`
 false    | `11000000` | `0xc0`
 true     | `11000001` | `0xc1`
-nil      | `11000010` | `0xc2`
-int8     | `11000011` | `0xc3`
-int16    | `11000100` | `0xc4`
-int32    | `11000101` | `0xc5`
-int64    | `11000110` | `0xc6`
-uint8    | `11000111` | `0xc7`
-uint16   | `11001000` | `0xc8`
-uint32   | `11001001` | `0xc9`
-uint64   | `11001010` | `0xca`
-float32  | `11001011` | `0xcb`
-float64  | `11001100` | `0xcc`
-fstring  | `0111xxxx` | `0x71` – `0x7f`
-vstring  | `11001101` | `0xcd`
-estring  | `11001110` | `0xce`
-fdata    | `0110xxxx` | `0x61` – `0x6f`
-vdata8   | `11010000` | `0xd0`
-vdata16  | `11010001` | `0xd1`
-vdata32  | `11010010` | `0xd2`
-edata    | `11010011` | `0xd3`
-farray   | `010xxxxx` | `0x41` – `0x5f`
-varray   | `11010100` | `0xd4`
-earray   | `11010101` | `0xd5`
-map      | `11010110` | `0xd6`
-emap     | `11010111` | `0xd7`
+int8     | `11000010` | `0xc2`
+int16    | `11000011` | `0xc3`
+int32    | `11000100` | `0xc4`
+int64    | `11000101` | `0xc5`
+uint8    | `11000110` | `0xc6`
+uint16   | `11000111` | `0xc7`
+uint32   | `11001000` | `0xc8`
+uint64   | `11001001` | `0xc9`
+float32  | `11001010` | `0xca`
+float64  | `11001011` | `0xcb`
+map      | `11001100` | `0xcc`
+varray   | `11001101` | `0xcd`
+vstring  | `11001110` | `0xce`
 sentinel | `11001111` | `0xcf`
-reserved | `11011xxx` | `0xd8` – `0xdf`
+nil      | `11010000` | `0xd0`
+vdata8   | `11010001` | `0xd1`
+vdata16  | `11010010` | `0xd2`
+vdata32  | `11010011` | `0xd3`
+typed8   | `11010100` | `0xd4`
+typed16  | `11010101` | `0xd5`
+typed32  | `11010110` | `0xd6`
+typedv8  | `11010111` | `0xd7`
+typedv16 | `11011000` | `0xd8`
+typedv32 | `11011001` | `0xd9`
+typedk8  | `11011010` | `0xda`
+typedk16 | `11011011` | `0xdb`
+typedk32 | `11011100` | `0xdc`
+reserved | `110111xx` | `0xdd` – `0xdf`
+-int5    | `111xxxxx` | `0xe0` – `0xff`
+
+### General requirements
+
+- For each primitive, if there are multiple formats that can exactly represent its value, the one with the shortest length in bytes must be used.
+
+- All multi-byte integers and floating-point numbers are encoded with **little-endian** byte order.
 
 ### References
 
-A reference stores an integer reference to a top-level object. The smallest possible reference type should be used. As an optimisation, implementations may sort objects in descending order of use frequency, so frequently-used objects have small integer ids that fit in smaller reference types.
+Reference formats encode the unsigned integer index of an indexed primitive.
+
+As an optimisation, implementations should sort primitives in descending order of reference frequency, so frequently-referenced primitives have small integer indices that fit in smaller formats.
 
 	ref6 [0, 63]      ref8 [0, 255]
 	 ---------      -------- --------
-	|00xxxxxxx|    |01000000|xxxxxxxx|
+	|00xxxxxxx|    |  0x40  |xxxxxxxx|
 	 ---------      -------- --------
 
 	     ref16 [0, 65 535]
      -------- -------- --------
-    |01100000|xxxxxxxx|xxxxxxxx|
+    |  0x60  |xxxxxxxx|xxxxxxxx|
 	 -------- -------- --------
 
 	           ref32 [0, 4 294 967 295]
 	 -------- -------- -------- -------- --------
-    |01110000|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+    |  0x70  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
      -------- -------- -------- -------- --------
 
 ### Integers
 
-Integer formats beginning with `int` are signed integers in 2's complement form, stored with **little-endian** byte ordering. Formats beginning with `uint` are unsigned integers starting at 0.
+Formats beginning with `int` are signed integers in two's complement representation. Formats beginning with `uint` are unsigned integers starting at 0.
 
-	+int6: unsigned, clear the first bit to obtain the value
+	+int6: unsigned (clear the first bit to obtain the value)
 	 --------
 	|10xxxxxx|
 	 --------
@@ -128,143 +152,208 @@ Integer formats beginning with `int` are signed integers in 2's complement form,
 
 	       int8                 uint8
 	 -------- --------    -------- -------- 
-	|  0xc3  |xxxxxxxx|  |  0xc7  |xxxxxxxx|
+	|  0xc2  |xxxxxxxx|  |  0xc6  |xxxxxxxx|
 	 -------- --------    -------- -------- 
 
 	           int16                         uint16
 	 -------- -------- --------    -------- -------- -------- 
-	|  0xc4  |xxxxxxxx|xxxxxxxx|  |  0xc8  |xxxxxxxx|xxxxxxxx|
+	|  0xc3  |xxxxxxxx|xxxxxxxx|  |  0xc7  |xxxxxxxx|xxxxxxxx|
 	 -------- -------- --------    -------- -------- -------- 
 
 	                    int32
 	 -------- -------- -------- -------- -------- 
-	|  0xc5  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xc4  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- 
 
 	                    uint32
 	 -------- -------- -------- -------- -------- 
-	|  0xc9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xc8  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- 
 
 	                                      int64
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
-	|  0xc6  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xc5  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
 
 	                                      uint64
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
-	|  0xca  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xc9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
+
+### Boolean
+
+	  false        true
+	 --------    --------
+	|  0xc0  |  |  0xc1  |
+	 --------    --------
 
 ### Nil
 
 	   nil
 	 --------
-	|  0xc2  |
+	|  0xd0  |
 	 --------
-
-### Boolean
-
-	   false       true
-	 --------    --------
-	|  0xc0  |  |  0xc1  |
-	 --------    --------
 
 ### Float
 
-Floating-point numbers are stored in the corresponding IEEE 754 format, with **little-endian** byte ordering.
+Single-precision floating-point numbers are encoded in the IEEE 754 binary32 format, and double-precision floating point-numbers are encoded in the IEEE 754 binary64 format.
 
 	                   float32
 	 -------- -------- -------- -------- -------- 
-	|  0xcb  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xca  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- 
 
 	                                     float64
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
-	|  0xcc  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+	|  0xcb  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 	 -------- -------- -------- -------- -------- -------- -------- -------- --------
 
 ### String
 
 	fstring: fixed-length string (no null terminator)
-	 --------
-	|0111xxxx|
-	 --------
+	 -------- ~~~~~~~~~~~~~~
+	|0110xxxx|  characters  |
+	 -------- ~~~~~~~~~~~~~~
 
-The 4-bit unsigned integer denoted `xxxx` stores the length of the string, 1–15.
+TODO: Unicode? bytes or characters? it should be easy to count characters even if they're variable-width
 
-	vstring: null-terminated string
-	 -------- ~~~~~~~~ --------
-	|  0xcd  |  text  |  0x00  |
-	 -------- ~~~~~~~~ --------
+The 4-bit unsigned integer denoted `xxxx` gives the length of the string in bytes, 1–15. The first byte must be followed by exactly this many bytes of the string.
 
-**Note**: zero-length strings *cannot* be stored in the `fstring` format, as this would conflict with the `ref32` format. Instead, store an `estring`:
+	 vstring: null-terminated string
+	 -------- ~~~~~~~~~~~~~~ --------
+	|  0xce  |  characters  |  0x00  |
+	 -------- ~~~~~~~~~~~~~~ --------
 
-	estring: empty string
-	 --------
-	|  0xce  |
-	 --------
+**Note**: zero-length strings *cannot* be encoded in the `fstring` format, as this would conflict with the `ref16` format. Instead, encode `nil`, or an immediately null-terminated `vstring` if type information is required.
 
 ### Data
 
 	fdata: fixed-length data
 	 -------- ~~~~~~~~~
-	|0110xxxx|  bytes  |
+	|0111xxxx|  bytes  |
 	 -------- ~~~~~~~~~
 
-The length of an `fdata` is given by the 4-bit unsigned integer in the first byte.
+The 4-bit unsigned integer `xxxx` in the first byte gives the length of the data. The first byte must be followed by exactly this many bytes of the data.
 
 	vdata8: data of 8-bit length       vdata16: data of 16-bit length
 	 -------- -------- ~~~~~~~~~    -------- -------- -------- ~~~~~~~~~
-	|  0xd0  |xxxxxxxx|  bytes  |  |  0xd1  |xxxxxxxx|xxxxxxxx|  bytes  |
+	|  0xd1  |xxxxxxxx|  bytes  |  |  0xd2  |xxxxxxxx|xxxxxxxx|  bytes  |
 	 -------- -------- ~~~~~~~~~    -------- -------- -------- ~~~~~~~~~
 
 	             vdata32: data of 32-bit length
 	 -------- -------- -------- -------- -------- ~~~~~~~~~
-	|  0xd2  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
+	|  0xd3  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  bytes  |
 	 -------- -------- -------- -------- -------- ~~~~~~~~~
 
-The length of a `vdata` is given by the unsigned integer that follows the `vdata` signature byte.
+The unsigned integer that follows the first byte gives the length of the data, and must be followed by exactly this many bytes of the data.
 
-**Note**: zero-length data *cannot* be stored in the `fdata` format, as this would conflict with the `ref16` format. Instead, store an `edata`:
-
-	edata: empty data
-	 --------
-	|  0xd3  |
-	 --------
+**Note**: zero-length data *cannot* be encoded in the `fdata` format, as this would conflict with the `ref32` format. Instead, encode `nil`, or `vdata8` of length 0 if type information is required.
 
 ### Array
 
 	farray: fixed-length array
-	 -------- ≈≈≈≈≈≈≈≈≈
-	|010xxxxx| objects |
-	 -------- ≈≈≈≈≈≈≈≈≈
+	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈
+	|010xxxxx| primitives |
+	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈
 
 	varray: sentinel-terminated array
-	 -------- ≈≈≈≈≈≈≈≈≈ --------
-	|  0xd4  | objects |  0xcf  |
-	 -------- ≈≈≈≈≈≈≈≈≈ --------
+	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈ --------
+	|  0xcd  | primitives |  0xcf  |
+	 -------- ≈≈≈≈≈≈≈≈≈≈≈≈ --------
 
-**Note**: zero-length arrays *cannot* be stored in the `farray` format, as this would conflict with the `ref8` format. Instead, store an `edata`:
-
-	earray: empty array
-	 --------
-	|  0xd5  |
-	 --------
+**Note**: zero-length arrays *cannot* be encoded in the `farray` format, as this would conflict with the `ref8` format. Instead, encode `nil`, or an immediately null-terminated `varray` if type information is required.
 
 ### Map
 
 	     map: array-backed map
 	 -------- ====================
-	|  0xd6  |  farray or varray  |
+	|  0xcc  |  farray or varray  |
 	 -------- ====================
 
-The array that follows the map designator contains alternating keys and values, in the form (key0, val0, key1, val1, ...).
+The array that follows the map designator contains alternating keys and values, in the form *key0, val0, key1, val1, ...*.
 	
-To conserve space, use `emap` to store an empty map in one byte:
+To store an empty map, store `nil`, or, if type information is required, a normal map with `nil` instead of the array:
 
-	emap: empty map
-	 --------
-	|  0xd7  |
-	 --------
+	     empty map
+	 -------- --------
+	|  0xcc  |  0xd0  |
+	 -------- --------
+
+### Typed primitives
+
+A typed primitive associates type information with a primitive.
+
+#### Single primitives
+
+The unsigned integer that follows the first byte gives the type information for the primitive that follows.
+
+    typed8: primitive with 8-bit type  typed16: primitive with 16-bit type
+     -------- -------- ===========    -------- -------- -------- ===========
+    |  0xd4  |xxxxxxxx| primitive |  |  0xd5  |xxxxxxxx|xxxxxxxx| primitive |
+     -------- -------- ===========    -------- -------- -------- ===========
+
+               typed32: primitive with 32-bit type
+     -------- -------- -------- -------- -------- ===========
+    |  0xd6  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| primitive |
+     -------- -------- -------- -------- -------- ===========
+
+#### Arrays
+
+If an array contains primitives all of the same type, it is a waste of space to individually identify each one. The array type identifier byte is used to specify the type of all primitives in the array:
+
+    typedv8: array with 8-bit primitive type  typedv16: array with 16-bit primitive type
+     -------- -------- =======               -------- -------- -------- =======
+    |  0xd7  |xxxxxxxx| array |             |  0xd8  |xxxxxxxx|xxxxxxxx| array |
+     -------- -------- =======               -------- -------- -------- =======
+
+          typedv32: array with 32-bit primitive type
+     -------- -------- -------- -------- -------- =======
+    |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| array |
+     -------- -------- -------- -------- -------- =======
+
+where `array` is a `farray`, `varray`, or `nil`.
+
+#### Maps
+
+To encode a map where all keys and values are of the same type, simply identify the underlying array as described previously:
+
+        map with 8-bit content type               map with 16-bit content type
+     -------- -------- -------- =======    -------- -------- -------- -------- =======
+    |  0xcc  |  0xd7  |xxxxxxxx| array |  |  0xcc  |  0xd8  |xxxxxxxx|xxxxxxxx| array |
+     -------- -------- -------- =======    -------- -------- -------- -------- =======
+
+                     map with 32-bit content type
+     -------- -------- -------- -------- -------- -------- =======
+    |  0xcc  |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| array |
+     -------- -------- -------- -------- -------- -------- =======
+
+where `array` is one of `farray`, `varray`, or `nil`.
+
+To encode a map where all values are of the same type, but there is no information about the keys, place the `typedv` byte before the map:
+
+    map with 8-bit value type      map with 16-bit value type
+     -------- -------- =====    -------- -------- -------- =====
+    |  0xd7  |xxxxxxxx| map |  |  0xd8  |xxxxxxxx|xxxxxxxx| map |
+     -------- -------- =====    -------- -------- -------- =====
+     
+                 map with 32-bit value type
+     -------- -------- -------- -------- -------- ===== 
+    |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| map |
+     -------- -------- -------- -------- -------- ===== 
+
+**Note:** in this case, the map cannot be replaced with `nil` to encode an empty map, as this would be interpreted as an empty array.
+
+The `typedk` formats encode a map where all keys are of the same type:
+
+    typedk8: map with 8-bit key type  typedk16: map with 16-bit key type
+     -------- -------- =====           -------- -------- -------- =====
+    |  0xda  |xxxxxxxx| map |         |  0xdb  |xxxxxxxx|xxxxxxxx| map |
+     -------- -------- =====           -------- -------- -------- =====
+
+            typedk32: map with 32-bit value type
+     -------- -------- -------- -------- -------- ===== 
+    |  0xdc  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| map |
+     -------- -------- -------- -------- -------- ===== 
+
+where `map` is a `map`, `nil`, or a map with a specified value type. This makes it possible to specify separate key and value types for a map.
 
