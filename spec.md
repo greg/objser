@@ -46,19 +46,6 @@ A file consists of a consecutive sequence of primitives, which are *indexed* by 
 	│  id 0  │  id 1  │  id 2  |        |  root  │  EOF
 	 ======== ======== ======== ≈≈≈≈≈≈≈≈ ======== 
 
-## Limitations
-
-- A single output file contains at most 2<sup>32</sup> indexed primitives. Hence, a serialisable object graph contains at most that many objects that are referenced by more than one object.
-
-- If required by language or platform limitations, implementations may impose the following limitations:
-    - Integer bounds may be restricted up to [0, 2<sup>32</sup> - 1] for unsigned integers and [-2<sup>32</sup>, 2<sup>32</sup> - 1] for signed integers; integers outside of decodable bounds must be decoded as a double-precision floating-point number, or single-precision if it provides the exact value or double-precision floating-point numbers are not supported
-    - If double-precision floating-point numbers are not supported, they must be truncated to single-precision on decoding
-    - String and array primitives may be restricted to a maximum length of at least 2<sup>32</sup> - 1 characters or constrained primitives, respectively
-    - Map primitives may be restricted to a maximum length of at least 2<sup>31</sup> - 1 key-value pairs
-
-    If implementation-imposed limitations cause a loss of precision, the implementation must notify the user of the decoder. If implementation-imposed limitations cause a failure to completely decode a string, array, or map, the entire decoding process must fail with a descriptive error.
-
-
 ## Formats
 
 Each primitive is encoded in one of the supported *formats*.
@@ -109,22 +96,16 @@ typedk32 | `11011100` | `0xdc`
 reserved | `110111xx` | `0xdd` – `0xdf`
 -int5    | `111xxxxx` | `0xe0` – `0xff`
 
-### General requirements
-
-- For each primitive, if there are multiple formats that can exactly represent its value, the one with the shortest length in bytes must be used.
-
-- All multi-byte integers and floating-point numbers are encoded with **little-endian** byte order.
-
 ### References
 
 Reference formats encode the unsigned integer index of an indexed primitive.
 
 As an optimisation, implementations should sort primitives in descending order of reference frequency, so frequently-referenced primitives have small integer indices that fit in smaller formats.
 
-	ref6 [0, 63]      ref8 [0, 255]
-	 ---------      -------- --------
-	|00xxxxxxx|    |  0x40  |xxxxxxxx|
-	 ---------      -------- --------
+	ref6 [0, 63]    ref8 [0, 255]
+	 ---------    -------- --------
+	|00xxxxxxx|  |  0x40  |xxxxxxxx|
+	 ---------    -------- --------
 
 	     ref16 [0, 65 535]
      -------- -------- --------
@@ -356,4 +337,22 @@ The `typedk` formats encode a map where all keys are of the same type:
      -------- -------- -------- -------- -------- ===== 
 
 where `map` is a `map`, `nil`, or a map with a specified value type. This makes it possible to specify separate key and value types for a map.
+
+## Implementation requirements
+
+- For each primitive, if there are multiple formats that can exactly represent its value, the one with the shortest length in bytes must be used.
+
+- All multi-byte integers and floating-point numbers are encoded with **little-endian** byte order.
+
+## Limitations
+
+- A single output file contains at most 2<sup>32</sup> indexed primitives. Hence, a serialisable object graph contains at most that many objects that are referenced by more than one object.
+
+- If required by language or platform limitations, implementations may impose the following limitations:
+    - Integer bounds may be restricted up to [0, 2<sup>32</sup> - 1] for unsigned integers and [-2<sup>32</sup>, 2<sup>32</sup> - 1] for signed integers; integers outside of decodable bounds must be decoded as a double-precision floating-point number, or single-precision if it provides the exact value or double-precision floating-point numbers are not supported
+    - If double-precision floating-point numbers are not supported, they must be truncated to single-precision on decoding
+    - String and array primitives may be restricted to a maximum length of at least 2<sup>32</sup> - 1 characters or constrained primitives, respectively
+    - Map primitives may be restricted to a maximum length of at least 2<sup>31</sup> - 1 key-value pairs
+
+    If implementation-imposed limitations cause a loss of precision, the implementation must notify the user of the decoder. If implementation-imposed limitations cause a failure to completely decode a string, array, or map, the entire decoding process must fail with a descriptive error.
 
