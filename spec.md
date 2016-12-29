@@ -119,7 +119,7 @@ As an optimisation, implementations should sort primitives in descending order o
 
 ### Integers
 
-Formats beginning with `int` are signed integers in two's complement representation. Formats beginning with `uint` are unsigned integers starting at 0.
+Formats beginning with `int` are signed integers in [two's complement representation](https://en.wikipedia.org/wiki/Two's_complement). Formats beginning with `uint` are unsigned integers starting at 0.
 
 	+int6: unsigned (clear the first bit to obtain the value)
 	 --------
@@ -177,7 +177,7 @@ Formats beginning with `int` are signed integers in two's complement representat
 
 ### Float
 
-Single-precision floating-point numbers are encoded in the IEEE 754 binary32 format, and double-precision floating point-numbers are encoded in the IEEE 754 binary64 format.
+Single-precision floating-point numbers are encoded in the IEEE 754 [binary32](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) format, and double-precision floating point-numbers are encoded in the IEEE 754 [binary64](https://en.wikipedia.org/wiki/Double-precision_floating-point_format) format.
 
 	                   float32
 	 -------- -------- -------- -------- -------- 
