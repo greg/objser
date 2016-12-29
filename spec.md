@@ -338,15 +338,19 @@ The `typedk` formats encode a map where all keys are of the same type:
 
 where `map` is a `map`, `nil`, or a map with a specified value type. This makes it possible to specify separate key and value types for a map.
 
-## Implementation requirements
+## Implementation guidelines
 
 - For each primitive, if there are multiple formats that can exactly represent its value, the one with the shortest length in bytes must be used.
 
 - All multi-byte integers and floating-point numbers are encoded with **little-endian** byte order.
 
-## Limitations
+- The byte values `0xdd`, `0xde`, and `0xdf` are reserved for future use, and should not appear as the first byte of any primitive. If an implementation unexpectedly encounters these bytes where a primitive should begin, decoding should fail with an error indicating that either the input is not valid or the implementation is out of date.
 
-- A single output file contains at most 2<sup>32</sup> indexed primitives. Hence, a serialisable object graph contains at most that many objects that are referenced by more than one object.
+- When possible, implementations should try to recover from minor errors in the input (e.g. a map's array containing an odd number of elements). All such errors must be reported in as much detail as practical.
+
+### Limitations
+
+- A single output file contains at most 2<sup>32</sup> indexed primitives. Hence, a serialisable object graph contains at most that many objects that are referenced by more than one object. Serialisation of an object graph that does not meet this requirement should fail.
 
 - If required by language or platform limitations, implementations may impose the following limitations:
     - Integer bounds may be restricted up to [0, 2<sup>32</sup> - 1] for unsigned integers and [-2<sup>32</sup>, 2<sup>32</sup> - 1] for signed integers; integers outside of decodable bounds must be decoded as a double-precision floating-point number, or single-precision if it provides the exact value or double-precision floating-point numbers are not supported
