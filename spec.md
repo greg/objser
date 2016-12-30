@@ -273,12 +273,12 @@ The unsigned integer that follows the first byte gives the type information for 
 
 If an array contains primitives all of the same type, it is a waste of space to individually identify each one. The array type identifier byte is used to specify the type of all primitives in the array:
 
-    typedv8: array with 8-bit primitive type  typedv16: array with 16-bit primitive type
-     -------- -------- =======               -------- -------- -------- =======
-    |  0xd7  |xxxxxxxx| array |             |  0xd8  |xxxxxxxx|xxxxxxxx| array |
-     -------- -------- =======               -------- -------- -------- =======
+    typedv8: array with 8-bit value type  typedv16: array with 16-bit value type
+     -------- -------- =======              -------- -------- -------- =======
+    |  0xd7  |xxxxxxxx| array |            |  0xd8  |xxxxxxxx|xxxxxxxx| array |
+     -------- -------- =======              -------- -------- -------- =======
 
-          typedv32: array with 32-bit primitive type
+            typedv32: array with 32-bit value type
      -------- -------- -------- -------- -------- =======
     |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| array |
      -------- -------- -------- -------- -------- =======
@@ -287,47 +287,40 @@ where `array` is a `farray`, `varray`, or `nil`.
 
 #### Maps
 
-To encode a map where all keys and values are of the same type, simply identify the underlying array as described previously:
+To encode a map where all values are of the same type, but there is no information about the keys, use a `typedv` array for backing the map:
 
-        map with 8-bit content type               map with 16-bit content type
-     -------- -------- -------- =======    -------- -------- -------- -------- =======
-    |  0xcc  |  0xd7  |xxxxxxxx| array |  |  0xcc  |  0xd8  |xxxxxxxx|xxxxxxxx| array |
-     -------- -------- -------- =======    -------- -------- -------- -------- =======
-
-                     map with 32-bit content type
-     -------- -------- -------- -------- -------- -------- =======
-    |  0xcc  |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| array |
-     -------- -------- -------- -------- -------- -------- =======
-
-where `array` is one of `farray`, `varray`, or `nil`.
-
-To encode a map where all values are of the same type, but there is no information about the keys, place the `typedv` byte before the map:
-
-    map with 8-bit value type      map with 16-bit value type
-     -------- -------- =====    -------- -------- -------- =====
-    |  0xd7  |xxxxxxxx| map |  |  0xd8  |xxxxxxxx|xxxxxxxx| map |
-     -------- -------- =====    -------- -------- -------- =====
-     
-                 map with 32-bit value type
-     -------- -------- -------- -------- -------- ===== 
-    |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| map |
-     -------- -------- -------- -------- -------- ===== 
+    typedvm: map with typed values
+     -------- ========
+    |  0xcc  | typedv |
+     -------- ========
 
 The `typedm` formats encode a map where all keys are of the same type:
 
     typedm8: map with 8-bit key type  typedm16: map with 16-bit key type
-     -------- -------- =====           -------- -------- -------- =====
-    |  0xda  |xxxxxxxx| map |         |  0xdb  |xxxxxxxx|xxxxxxxx| map |
-     -------- -------- =====           -------- -------- -------- =====
+     -------- -------- =======        -------- -------- -------- =======
+    |  0xda  |xxxxxxxx| array |      |  0xdb  |xxxxxxxx|xxxxxxxx| array |
+     -------- -------- =======        -------- -------- -------- =======
 
-            typedm32: map with 32-bit value type
-     -------- -------- -------- -------- -------- ===== 
-    |  0xdc  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| map |
-     -------- -------- -------- -------- -------- ===== 
+             typedm32: map with 32-bit value type
+     -------- -------- -------- -------- -------- =======
+    |  0xdc  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| array |
+     -------- -------- -------- -------- -------- ======= 
 
-where `map` is a `map`, `nil`, or a map with a specified value type. This makes it possible to specify separate key and value types for a map.
+where `array` is `farray`, `varray`, `nil`, or `typedv`. If `typedv` is used, the type it specifies will apply to the values in the map. This makes it possible to specify a map with one type for all keys, and another for all values.
 
-**Note:** in the case of an empty map with a specified value type but *no* key type, `nil` cannot be stored for `map`, as this would conflict with an empty typed array.
+A map where all keys and values have the same type should be encoded as follows:
+
+    typedms8: map with 8-bit content type    typedms16: map with 16-bit content type
+     -------- -------- -------- =======    -------- -------- -------- -------- =======
+    |  0xd7  |xxxxxxxx|  0xcc  | array |  |  0xd8  |xxxxxxxx|xxxxxxxx|  0xcc  | array |
+     -------- -------- -------- =======    -------- -------- -------- -------- =======
+
+                typedms32: map with 32-bit content type
+     -------- -------- -------- -------- -------- -------- =======
+    |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|  0xcc  | array |
+     -------- -------- -------- -------- -------- -------- =======
+
+where `array` is `farray`, `varray`, or `nil`.
 
 ## Implementation guidelines
 
