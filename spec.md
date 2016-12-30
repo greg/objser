@@ -338,13 +338,23 @@ where `map` is a `map`, `nil`, or a map with a specified value type. This makes 
 
 ## Implementation guidelines
 
+- All multi-byte integers and floating-point numbers are encoded with **little-endian** byte order.
+
+### Encoding requirements
+
 - For each primitive, if there are multiple formats that can exactly represent its value, the one with the shortest length in bytes must be used.
 
-- All multi-byte integers and floating-point numbers are encoded with **little-endian** byte order.
+- Primitives must be indexed if and only if they are referenced more than once.
+
+- Exactly one root (last) primitive is encoded, and it is obviously exempt from the previous requirement.
+
+### Decoding
+
+- When possible, implementations should try to recover from minor errors in the input (e.g. a map's array containing an odd number of elements). All such errors must be reported in as much detail as practical.
 
 - The byte values `0xdd`, `0xde`, and `0xdf` are reserved for future use, and should not appear as the first byte of any primitive. If an implementation unexpectedly encounters these bytes where a primitive should begin, decoding should fail with an error indicating that either the input is not valid or the implementation is out of date.
 
-- When possible, implementations should try to recover from minor errors in the input (e.g. a map's array containing an odd number of elements). All such errors must be reported in as much detail as practical.
+- The root (last) primitive is the only one returned directly to the user of the decoder. If there are indexed primitives that are not reachable by traversing the graph from the root primitive, the input is invalid. If the implementation chooses to return the partial decoding, it must make clear that either the root primitive was absent or the encoder was non-compliant.
 
 ### Limitations
 
