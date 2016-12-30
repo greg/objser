@@ -90,9 +90,9 @@ typed32  | `11010110` | `0xd6`
 typedv8  | `11010111` | `0xd7`
 typedv16 | `11011000` | `0xd8`
 typedv32 | `11011001` | `0xd9`
-typedk8  | `11011010` | `0xda`
-typedk16 | `11011011` | `0xdb`
-typedk32 | `11011100` | `0xdc`
+typedm8  | `11011010` | `0xda`
+typedm16 | `11011011` | `0xdb`
+typedm32 | `11011100` | `0xdc`
 reserved | `110111xx` | `0xdd` – `0xdf`
 -int5    | `111xxxxx` | `0xe0` – `0xff`
 
@@ -244,19 +244,12 @@ The unsigned integer that follows the first byte gives the length of the data, a
 
 ### Map
 
-	     map: array-backed map
-	 -------- ====================
-	|  0xcc  |  farray or varray  |
-	 -------- ====================
+	map: array-backed map
+	 -------- =========
+	|  0xcc  |  array  |
+	 -------- =========
 
-The array that follows the map designator contains alternating keys and values, in the form *key0, val0, key1, val1, ...*.
-	
-To store an empty map, store `nil`, or, if type information is required, a normal map with `nil` instead of the array:
-
-	     empty map
-	 -------- --------
-	|  0xcc  |  0xd0  |
-	 -------- --------
+The array that follows the map byte contains alternating keys and values, in the form *key0, val0, key1, val1, ...*. `array` is `farray`, `varray`, or `nil`. If type information is not required, store `nil` instead of an empty map.
 
 ### Typed primitives
 
@@ -320,21 +313,21 @@ To encode a map where all values are of the same type, but there is no informati
     |  0xd9  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| map |
      -------- -------- -------- -------- -------- ===== 
 
-**Note:** in this case, the map cannot be replaced with `nil` to encode an empty map, as this would be interpreted as an empty array.
+The `typedm` formats encode a map where all keys are of the same type:
 
-The `typedk` formats encode a map where all keys are of the same type:
-
-    typedk8: map with 8-bit key type  typedk16: map with 16-bit key type
+    typedm8: map with 8-bit key type  typedm16: map with 16-bit key type
      -------- -------- =====           -------- -------- -------- =====
     |  0xda  |xxxxxxxx| map |         |  0xdb  |xxxxxxxx|xxxxxxxx| map |
      -------- -------- =====           -------- -------- -------- =====
 
-            typedk32: map with 32-bit value type
+            typedm32: map with 32-bit value type
      -------- -------- -------- -------- -------- ===== 
     |  0xdc  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx| map |
      -------- -------- -------- -------- -------- ===== 
 
 where `map` is a `map`, `nil`, or a map with a specified value type. This makes it possible to specify separate key and value types for a map.
+
+**Note:** in the case of an empty map with a specified value type but *no* key type, `nil` cannot be stored for `map`, as this would conflict with an empty typed array.
 
 ## Implementation guidelines
 
